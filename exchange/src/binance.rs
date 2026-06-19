@@ -44,19 +44,18 @@ impl BinanceClient {
                     item.get("bidPrice").and_then(|v| v.as_str()),
                     item.get("askPrice").and_then(|v| v.as_str()),
                     item.get("bidQty").and_then(|v| v.as_str()),
-                )
-                    && let (Ok(bid), Ok(ask), Ok(qty)) = (
-                        bid_price_str.parse::<f64>(),
-                        ask_price_str.parse::<f64>(),
-                        bid_qty_str.parse::<f64>(),
-                    ) {
-                        ticks.push(Tick {
-                            symbol: symbol.to_string(),
-                            price: (bid + ask) / 2.0,
-                            volume: qty,
-                            timestamp: Utc::now(),
-                        });
-                    }
+                ) && let (Ok(bid), Ok(ask), Ok(qty)) = (
+                    bid_price_str.parse::<f64>(),
+                    ask_price_str.parse::<f64>(),
+                    bid_qty_str.parse::<f64>(),
+                ) {
+                    ticks.push(Tick {
+                        symbol: symbol.to_string(),
+                        price: (bid + ask) / 2.0,
+                        volume: qty,
+                        timestamp: Utc::now(),
+                    });
+                }
             }
         }
         Ok(ticks)

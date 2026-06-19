@@ -31,39 +31,40 @@ pub async fn start_binance_ws(symbols: Vec<String>, tx: mpsc::Sender<MarketEvent
             println!("Connected to Binance WebSocket!");
             while let Some(msg) = ws_stream.next().await {
                 if let Ok(Message::Text(text)) = msg
-                    && let Ok(data) = serde_json::from_str::<BinanceBookTicker>(&text) {
-                        let bid_price: f64 = data.b.parse().unwrap_or(0.0);
-                        let ask_price: f64 = data.a.parse().unwrap_or(0.0);
-                        let bid_qty: f64 = data.B.parse().unwrap_or(0.0);
-                        let ask_qty: f64 = data.A.parse().unwrap_or(0.0);
+                    && let Ok(data) = serde_json::from_str::<BinanceBookTicker>(&text)
+                {
+                    let bid_price: f64 = data.b.parse().unwrap_or(0.0);
+                    let ask_price: f64 = data.a.parse().unwrap_or(0.0);
+                    let bid_qty: f64 = data.B.parse().unwrap_or(0.0);
+                    let ask_qty: f64 = data.A.parse().unwrap_or(0.0);
 
-                        let mid_price = (bid_price + ask_price) / 2.0;
+                    let mid_price = (bid_price + ask_price) / 2.0;
 
-                        // Send Tick
-                        let _ = tx
-                            .send(MarketEvent::Tick(Tick {
-                                symbol: data.s.clone(),
-                                price: mid_price,
-                                volume: bid_qty + ask_qty,
-                                timestamp: Utc::now(),
-                            }))
-                            .await;
+                    // Send Tick
+                    let _ = tx
+                        .send(MarketEvent::Tick(Tick {
+                            symbol: data.s.clone(),
+                            price: mid_price,
+                            volume: bid_qty + ask_qty,
+                            timestamp: Utc::now(),
+                        }))
+                        .await;
 
-                        // Send Top-of-book
-                        let _ = tx
-                            .send(MarketEvent::OrderBook(OrderBookSnapshot {
-                                symbol: data.s.clone(),
-                                bids: vec![OrderBookLevel {
-                                    price: bid_price,
-                                    qty: bid_qty,
-                                }],
-                                asks: vec![OrderBookLevel {
-                                    price: ask_price,
-                                    qty: ask_qty,
-                                }],
-                            }))
-                            .await;
-                    }
+                    // Send Top-of-book
+                    let _ = tx
+                        .send(MarketEvent::OrderBook(OrderBookSnapshot {
+                            symbol: data.s.clone(),
+                            bids: vec![OrderBookLevel {
+                                price: bid_price,
+                                qty: bid_qty,
+                            }],
+                            asks: vec![OrderBookLevel {
+                                price: ask_price,
+                                qty: ask_qty,
+                            }],
+                        }))
+                        .await;
+                }
             }
         }
         Err(e) => {
