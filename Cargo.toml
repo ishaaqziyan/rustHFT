@@ -1,0 +1,15 @@
+[workspace]
+members = [
+    "hft_core",
+    "engine",
+    "exchange",
+    "strategy",
+    "dashboard",
+]
+resolver = "2"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"

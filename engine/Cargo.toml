@@ -1,0 +1,10 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+hft_core = { path = "../hft_core" }
+exchange = { path = "../exchange" }
+strategy = { path = "../strategy" }
+tokio = { version = "1.0", features = ["full", "sync"] }
