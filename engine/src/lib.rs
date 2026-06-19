@@ -170,45 +170,42 @@ impl Engine {
                     // Process strategy commands
                     let mut sent_order = None;
                     for cmd in commands {
-                        match cmd {
-                            StrategyCommand::SubmitOrder(order) => {
-                                sent_order = Some(order.clone());
+                        if let StrategyCommand::SubmitOrder(order) = cmd {
+                            sent_order = Some(order.clone());
 
-                                // Forward to Alpaca Paper API if keys exist and not crypto
-                                if !api_key_id.is_empty() && !api_secret.is_empty() && !order.symbol.ends_with("USDT") {
-                                    let alpaca = exchange::alpaca::AlpacaClient::new(api_key_id.clone(), api_secret.clone());
-                                    let side_str = if order.side == hft_core::Side::Buy { "buy" } else { "sell" };
-                                    let symbol = order.symbol.clone();
-                                    let qty = order.qty;
+                            // Forward to Alpaca Paper API if keys exist and not crypto
+                            if !api_key_id.is_empty() && !api_secret.is_empty() && !order.symbol.ends_with("USDT") {
+                                let alpaca = exchange::alpaca::AlpacaClient::new(api_key_id.clone(), api_secret.clone());
+                                let side_str = if order.side == hft_core::Side::Buy { "buy" } else { "sell" };
+                                let symbol = order.symbol.clone();
+                                let qty = order.qty;
 
-                                    tokio::spawn(async move {
-                                        let _ = alpaca.place_order(&symbol, qty, side_str).await;
-                                    });
-                                }
-
-                                // Forward to Binance Testnet API if keys exist and IS crypto
-                                if !binance_key.is_empty() && !binance_secret.is_empty() && order.symbol.ends_with("USDT") {
-                                    let binance = exchange::binance::BinanceClient::new(binance_key.clone(), binance_secret.clone());
-                                    let side_str = if order.side == hft_core::Side::Buy { "buy" } else { "sell" };
-                                    let symbol = order.symbol.clone();
-                                    let qty = order.qty;
-
-                                    tokio::spawn(async move {
-                                        let _ = binance.place_order(&symbol, qty, side_str).await;
-                                    });
-                                }
-
-                                // Simulate local execution for PnL
-                                let exec = ExecutionReport {
-                                    order_id: order.id,
-                                    symbol: order.symbol,
-                                    side: order.side,
-                                    executed_qty: order.qty,
-                                    executed_price: order.price,
-                                };
-                                strategy.on_execution(&exec);
+                                tokio::spawn(async move {
+                                    let _ = alpaca.place_order(&symbol, qty, side_str).await;
+                                });
                             }
-                            _ => {}
+
+                            // Forward to Binance Testnet API if keys exist and IS crypto
+                            if !binance_key.is_empty() && !binance_secret.is_empty() && order.symbol.ends_with("USDT") {
+                                let binance = exchange::binance::BinanceClient::new(binance_key.clone(), binance_secret.clone());
+                                let side_str = if order.side == hft_core::Side::Buy { "buy" } else { "sell" };
+                                let symbol = order.symbol.clone();
+                                let qty = order.qty;
+
+                                tokio::spawn(async move {
+                                    let _ = binance.place_order(&symbol, qty, side_str).await;
+                                });
+                            }
+
+                            // Simulate local execution for PnL
+                            let exec = ExecutionReport {
+                                order_id: order.id,
+                                symbol: order.symbol,
+                                side: order.side,
+                                executed_qty: order.qty,
+                                executed_price: order.price,
+                            };
+                            strategy.on_execution(&exec);
                         }
                     }
 
@@ -257,6 +254,5 @@ mod tests {
         // Just verify it doesn't crash on instantiation
         // We cannot easily test run() without a full tokio setup and mocking
         // the external connections like Binance and Alpaca.
-        assert!(true);
     }
 }

@@ -11,9 +11,9 @@ fn main() {
 
 #[component]
 fn App() -> Element {
-    let mut ticks = use_signal(|| Vec::<String>::new());
+    let mut ticks = use_signal(Vec::<String>::new);
     let mut rog_ob = use_signal(|| None::<OrderBookSnapshot>);
-    let mut orders = use_signal(|| Vec::<String>::new());
+    let mut orders = use_signal(Vec::<String>::new);
     let mut pnl = use_signal(|| 0.0);
     let mut position = use_signal(|| 0);
     let mut z_score = use_signal(|| 0.0);

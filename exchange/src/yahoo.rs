@@ -7,6 +7,12 @@ pub struct YahooClient {
     client: Client,
 }
 
+impl Default for YahooClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl YahooClient {
     pub fn new() -> Self {
         Self {

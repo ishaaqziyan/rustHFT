@@ -39,9 +39,9 @@ pub async fn start_alpaca_ws(
 
             // 3. Listen for messages
             while let Some(msg) = ws_stream.next().await {
-                if let Ok(Message::Text(text)) = msg {
-                    if let Ok(data) = serde_json::from_str::<serde_json::Value>(&text) {
-                        if let Some(arr) = data.as_array() {
+                if let Ok(Message::Text(text)) = msg
+                    && let Ok(data) = serde_json::from_str::<serde_json::Value>(&text)
+                        && let Some(arr) = data.as_array() {
                             for item in arr {
                                 if let Some(msg_type) = item.get("T").and_then(|v| v.as_str()) {
                                     if msg_type == "q" {
@@ -92,8 +92,6 @@ pub async fn start_alpaca_ws(
                                 }
                             }
                         }
-                    }
-                }
             }
         }
         Err(e) => {

@@ -30,8 +30,8 @@ pub async fn start_binance_ws(symbols: Vec<String>, tx: mpsc::Sender<MarketEvent
         Ok((mut ws_stream, _)) => {
             println!("Connected to Binance WebSocket!");
             while let Some(msg) = ws_stream.next().await {
-                if let Ok(Message::Text(text)) = msg {
-                    if let Ok(data) = serde_json::from_str::<BinanceBookTicker>(&text) {
+                if let Ok(Message::Text(text)) = msg
+                    && let Ok(data) = serde_json::from_str::<BinanceBookTicker>(&text) {
                         let bid_price: f64 = data.b.parse().unwrap_or(0.0);
                         let ask_price: f64 = data.a.parse().unwrap_or(0.0);
                         let bid_qty: f64 = data.B.parse().unwrap_or(0.0);
@@ -64,7 +64,6 @@ pub async fn start_binance_ws(symbols: Vec<String>, tx: mpsc::Sender<MarketEvent
                             }))
                             .await;
                     }
-                }
             }
         }
         Err(e) => {
