@@ -1,9 +1,9 @@
-pub mod webhook;
-pub mod yahoo;
+pub mod alpaca;
+pub mod alpaca_ws;
 pub mod binance;
 pub mod binance_ws;
-pub mod alpaca_ws;
-pub mod alpaca;
+pub mod webhook;
+pub mod yahoo;
 
 use chrono::Utc;
 use hft_core::{MarketEvent, OrderBookLevel, OrderBookSnapshot, Tick};
@@ -160,7 +160,7 @@ mod tests {
         assert_eq!(ob.symbol, "TEST");
         assert_eq!(ob.bids.len(), 5);
         assert_eq!(ob.asks.len(), 5);
-        
+
         // Check prices
         assert!(ob.bids[0].price < 100.0);
         assert!(ob.asks[0].price > 100.0);
@@ -170,16 +170,16 @@ mod tests {
     async fn test_dummy_exchange_creation() {
         let (tx, mut rx) = mpsc::channel(10);
         let exchange = DummyExchange::new(tx);
-        
+
         // Start in background and let it run for a short bit
         let handle = tokio::spawn(async move {
             exchange.start().await;
         });
-        
+
         // Wait for first event
         let event = rx.recv().await;
         assert!(event.is_some());
-        
+
         // Abort task
         handle.abort();
     }

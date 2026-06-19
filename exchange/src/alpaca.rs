@@ -18,9 +18,14 @@ impl AlpacaClient {
         }
     }
 
-    pub async fn place_order(&self, symbol: &str, qty: f64, side: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn place_order(
+        &self,
+        symbol: &str,
+        qty: f64,
+        side: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let url = format!("{}/orders", self.base_url);
-        
+
         let payload = json!({
             "symbol": symbol,
             "qty": qty.to_string(),
@@ -29,7 +34,9 @@ impl AlpacaClient {
             "time_in_force": "day"
         });
 
-        let res = self.client.post(&url)
+        let res = self
+            .client
+            .post(&url)
             .header("APCA-API-KEY-ID", &self.api_key)
             .header("APCA-API-SECRET-KEY", &self.api_secret)
             .json(&payload)
@@ -42,7 +49,10 @@ impl AlpacaClient {
             return Err(format!("Failed to place order: {}", error_text).into());
         }
 
-        println!("Successfully submitted {} order for {} to Alpaca Paper API", side, symbol);
+        println!(
+            "Successfully submitted {} order for {} to Alpaca Paper API",
+            side, symbol
+        );
         Ok(())
     }
 }

@@ -1,8 +1,8 @@
 #![allow(non_snake_case)]
 use dioxus::prelude::*;
-use engine::{Engine, DashboardUpdate};
-use hft_core::{OrderBookSnapshot, StrategyCommand, Side};
+use engine::{DashboardUpdate, Engine};
 use futures_util::StreamExt;
+use hft_core::{OrderBookSnapshot, Side, StrategyCommand};
 use tokio::sync::mpsc;
 
 fn main() {
@@ -24,73 +24,75 @@ fn App() -> Element {
     let mut symbol_a = use_signal(|| "BTCUSDT".to_string());
     let mut symbol_b = use_signal(|| "ETHUSDT".to_string());
 
-    let ui_coroutine = use_coroutine(move |mut rx: UnboundedReceiver<StrategyCommand>| async move {
-        let (update_tx, mut update_rx) = mpsc::channel::<DashboardUpdate>(1024);
-        let (cmd_tx, cmd_rx) = mpsc::channel::<StrategyCommand>(100);
-        
-        let engine = Engine::new(update_tx, cmd_rx);
-        
-        tokio::spawn(async move {
-            engine.run().await;
-        });
+    let ui_coroutine = use_coroutine(
+        move |mut rx: UnboundedReceiver<StrategyCommand>| async move {
+            let (update_tx, mut update_rx) = mpsc::channel::<DashboardUpdate>(1024);
+            let (cmd_tx, cmd_rx) = mpsc::channel::<StrategyCommand>(100);
 
-        loop {
-            tokio::select! {
-                Some(cmd) = rx.next() => {
-                    let _ = cmd_tx.send(cmd).await;
-                }
-                Some(update) = update_rx.recv() => {
-                    if let Some(tick) = update.tick {
-                        let tick_str = format!("{} | {} | Price: {:.2} | Vol: {:.2}", 
-                            tick.timestamp.format("%H:%M:%S%.3f"),
-                            tick.symbol,
-                            tick.price,
-                            tick.volume
-                        );
-                        ticks.with_mut(|t| {
-                            t.push(tick_str);
-                            if t.len() > 10 { t.remove(0); }
-                        });
+            let engine = Engine::new(update_tx, cmd_rx);
+
+            tokio::spawn(async move {
+                engine.run().await;
+            });
+
+            loop {
+                tokio::select! {
+                    Some(cmd) = rx.next() => {
+                        let _ = cmd_tx.send(cmd).await;
                     }
-
-                    if let Some(ob) = update.orderbook {
-                        // Display the orderbook for symbol_a
-                        if ob.symbol == symbol_a() {
-                            rog_ob.set(Some(ob));
+                    Some(update) = update_rx.recv() => {
+                        if let Some(tick) = update.tick {
+                            let tick_str = format!("{} | {} | Price: {:.2} | Vol: {:.2}",
+                                tick.timestamp.format("%H:%M:%S%.3f"),
+                                tick.symbol,
+                                tick.price,
+                                tick.volume
+                            );
+                            ticks.with_mut(|t| {
+                                t.push(tick_str);
+                                if t.len() > 10 { t.remove(0); }
+                            });
                         }
-                    }
 
-                    if let Some(order) = update.new_order {
-                        let side_str = if order.side == Side::Buy { "BUY " } else { "SELL" };
-                        let order_str = format!("Order #{} | {} {} | Qty: {:.2} @ {:.2}", 
-                            order.id, side_str, order.symbol, order.qty, order.price
-                        );
-                        orders.with_mut(|o| {
-                            o.push(order_str);
-                            if o.len() > 10 { o.remove(0); }
-                        });
-                    }
+                        if let Some(ob) = update.orderbook {
+                            // Display the orderbook for symbol_a
+                            if ob.symbol == symbol_a() {
+                                rog_ob.set(Some(ob));
+                            }
+                        }
 
-                    pnl.set(update.pnl);
-                    position.set(update.position);
-                    if let Some(stat) = update.stat {
-                        z_score.set(stat.z_score);
-                        beta.set(stat.beta);
+                        if let Some(order) = update.new_order {
+                            let side_str = if order.side == Side::Buy { "BUY " } else { "SELL" };
+                            let order_str = format!("Order #{} | {} {} | Qty: {:.2} @ {:.2}",
+                                order.id, side_str, order.symbol, order.qty, order.price
+                            );
+                            orders.with_mut(|o| {
+                                o.push(order_str);
+                                if o.len() > 10 { o.remove(0); }
+                            });
+                        }
+
+                        pnl.set(update.pnl);
+                        position.set(update.position);
+                        if let Some(stat) = update.stat {
+                            z_score.set(stat.z_score);
+                            beta.set(stat.beta);
+                        }
                     }
                 }
             }
-        }
-    });
+        },
+    );
 
     rsx! {
         div {
             style: "padding: 20px; font-family: 'Inter', sans-serif; background-color: #0d1117; color: #e6edf3; height: 100vh; overflow: hidden; display: flex; flex-direction: column;",
-            
+
             // Header
             div {
                 style: "display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;",
                 h1 { style: "color: #58a6ff; margin: 0;", "Universal StatArb Engine (Live)" }
-                
+
                 div {
                     style: "display: flex; gap: 10px; align-items: center; background: #161b22; padding: 10px; border-radius: 8px; border: 1px solid #30363d;",
                     span { style: "color: #3fb950; font-size: 14px; font-weight: bold;", "🔒 Secrets Managed by Doppler" }
@@ -105,10 +107,10 @@ fn App() -> Element {
                     if is_active() { "KILL SWITCH (HALT)" } else { "SYSTEM HALTED (RESUME)" }
                 }
             }
-            
+
             div {
                 style: "display: flex; gap: 20px; flex: 1; min-height: 0;",
-                
+
                 // Left Panel: Ticks & Executions
                 div {
                     style: "flex: 1; display: flex; flex-direction: column; gap: 20px;",
@@ -128,9 +130,9 @@ fn App() -> Element {
                         div {
                             style: "font-family: monospace; font-size: 13px; overflow-y: auto; flex: 1;",
                             for order in orders.read().iter().rev() {
-                                div { 
-                                    style: format!("padding: 4px; border-bottom: 1px solid #21262d; color: {};", if order.contains("BUY") { "#3fb950" } else { "#f85149" }), 
-                                    "{order}" 
+                                div {
+                                    style: format!("padding: 4px; border-bottom: 1px solid #21262d; color: {};", if order.contains("BUY") { "#3fb950" } else { "#f85149" }),
+                                    "{order}"
                                 }
                             }
                         }
@@ -178,7 +180,7 @@ fn App() -> Element {
                 // Right Panel: Strategy Stats & Config
                 div {
                     style: "flex: 1; display: flex; flex-direction: column; gap: 20px;",
-                    
+
                     div {
                         style: "background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 15px;",
                         h3 { style: "color: #8b949e; margin-top: 0;", "Pair Configuration" }
@@ -209,9 +211,9 @@ fn App() -> Element {
                     div {
                         style: "background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 15px;",
                         h3 { style: "color: #8b949e; margin-top: 0;", "Live PnL & Exposure" }
-                        h1 { 
+                        h1 {
                             style: if *pnl.read() >= 0.0 { "color: #3fb950; margin: 10px 0; font-size: 42px;" } else { "color: #f85149; margin: 10px 0; font-size: 42px;" },
-                            "CHF {pnl.read():.2}" 
+                            "CHF {pnl.read():.2}"
                         }
                         p { style: "font-size: 18px;", "Net Position (Spread Lots): {position.read()}" }
                     }
@@ -232,7 +234,7 @@ fn App() -> Element {
                                         style: "position: absolute; left: 50%; height: 10px; width: 2px; background: #8b949e;",
                                     }
                                     div {
-                                        style: format!("position: absolute; top: -3px; width: 16px; height: 16px; border-radius: 50%; background: {}; left: calc(50% + ({} * 10%)); transition: left 0.1s;", 
+                                        style: format!("position: absolute; top: -3px; width: 16px; height: 16px; border-radius: 50%; background: {}; left: calc(50% + ({} * 10%)); transition: left 0.1s;",
                                             if z_score() > 2.0 { "#f85149" } else if z_score() < -2.0 { "#3fb950" } else { "#58a6ff" },
                                             (z_score() as f64).clamp(-5.0, 5.0)
                                         ),

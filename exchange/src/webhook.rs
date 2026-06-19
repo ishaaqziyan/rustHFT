@@ -1,7 +1,4 @@
-use axum::{
-    routing::post,
-    Json, Router,
-};
+use axum::{Json, Router, routing::post};
 use serde::Deserialize;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;

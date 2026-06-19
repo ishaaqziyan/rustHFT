@@ -47,10 +47,14 @@ impl StatArbStrategy {
         }
 
         if tick.symbol == self.symbol_a {
-            if self.history_a.len() == self.window_size { self.history_a.pop_front(); }
+            if self.history_a.len() == self.window_size {
+                self.history_a.pop_front();
+            }
             self.history_a.push_back(tick.price);
         } else if tick.symbol == self.symbol_b {
-            if self.history_b.len() == self.window_size { self.history_b.pop_front(); }
+            if self.history_b.len() == self.window_size {
+                self.history_b.pop_front();
+            }
             self.history_b.push_back(tick.price);
         } else {
             return (None, vec![]);
@@ -173,14 +177,14 @@ mod tests {
     fn test_strategy_not_active() {
         let mut strategy = StatArbStrategy::new(20, "A".to_string(), "B".to_string());
         strategy.is_active = false;
-        
+
         let tick = Tick {
             symbol: "A".to_string(),
             price: 100.0,
             volume: 10.0,
             timestamp: Utc::now(),
         };
-        
+
         let (summary, commands) = strategy.on_tick(&tick);
         assert!(summary.is_none());
         assert!(commands.is_empty());
@@ -189,7 +193,7 @@ mod tests {
     #[test]
     fn test_strategy_on_execution() {
         let mut strategy = StatArbStrategy::new(20, "A".to_string(), "B".to_string());
-        
+
         let exec = ExecutionReport {
             order_id: 1,
             symbol: "A".to_string(),
@@ -197,7 +201,7 @@ mod tests {
             executed_qty: 10.0,
             executed_price: 100.0,
         };
-        
+
         strategy.on_execution(&exec);
         assert_eq!(strategy.pnl, 5.0); // 0.5 * executed_qty
     }
@@ -205,7 +209,7 @@ mod tests {
     #[test]
     fn test_strategy_trading_logic() {
         let mut strategy = StatArbStrategy::new(20, "A".to_string(), "B".to_string());
-        
+
         // Feed 20 ticks for B (constant price 100.0)
         for _ in 0..20 {
             strategy.on_tick(&Tick {
@@ -215,7 +219,7 @@ mod tests {
                 timestamp: Utc::now(),
             });
         }
-        
+
         // Feed 19 ticks for A (constant price 100.0)
         for _ in 0..19 {
             strategy.on_tick(&Tick {
@@ -225,7 +229,7 @@ mod tests {
                 timestamp: Utc::now(),
             });
         }
-        
+
         // 20th tick for A, slightly higher price
         let (summary, commands) = strategy.on_tick(&Tick {
             symbol: "A".to_string(),
@@ -233,7 +237,7 @@ mod tests {
             volume: 1.0,
             timestamp: Utc::now(),
         });
-        
+
         assert!(summary.is_some());
         let sum = summary.unwrap();
         // Since B is constant and A jumped, beta should be calculated, spread should deviate

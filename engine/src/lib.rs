@@ -64,7 +64,7 @@ impl Engine {
                     let sym_a = strategy.symbol_a.clone();
                     let sym_b = strategy.symbol_b.clone();
                     let tx = event_tx.clone();
-                    
+
                     let is_crypto = sym_a.ends_with("USDT");
 
                     if !is_crypto && api_key_id.is_empty() {
@@ -75,7 +75,7 @@ impl Engine {
                                 let _ = tx.send(MarketEvent::Tick(tick)).await;
                             }
                         }
-                        
+
                         // Simulate OrderBook for Yahoo polling
                         if last_price_a > 0.0 {
                             use hft_core::{OrderBookSnapshot, OrderBookLevel};
@@ -127,7 +127,7 @@ impl Engine {
                             if let Some(task) = ws_task.take() {
                                 task.abort();
                             }
-                            
+
                             if a.ends_with("USDT") {
                                 let tx = event_tx.clone();
                                 let syms = vec![a, b];
@@ -173,14 +173,14 @@ impl Engine {
                         match cmd {
                             StrategyCommand::SubmitOrder(order) => {
                                 sent_order = Some(order.clone());
-                                
+
                                 // Forward to Alpaca Paper API if keys exist and not crypto
                                 if !api_key_id.is_empty() && !api_secret.is_empty() && !order.symbol.ends_with("USDT") {
                                     let alpaca = exchange::alpaca::AlpacaClient::new(api_key_id.clone(), api_secret.clone());
                                     let side_str = if order.side == hft_core::Side::Buy { "buy" } else { "sell" };
                                     let symbol = order.symbol.clone();
                                     let qty = order.qty;
-                                    
+
                                     tokio::spawn(async move {
                                         let _ = alpaca.place_order(&symbol, qty, side_str).await;
                                     });
@@ -192,7 +192,7 @@ impl Engine {
                                     let side_str = if order.side == hft_core::Side::Buy { "buy" } else { "sell" };
                                     let symbol = order.symbol.clone();
                                     let qty = order.qty;
-                                    
+
                                     tokio::spawn(async move {
                                         let _ = binance.place_order(&symbol, qty, side_str).await;
                                     });
@@ -253,7 +253,7 @@ mod tests {
         let (ui_tx, _ui_rx) = mpsc::channel(10);
         let (_cmd_tx, cmd_rx) = mpsc::channel(10);
         let _engine = Engine::new(ui_tx, cmd_rx);
-        
+
         // Just verify it doesn't crash on instantiation
         // We cannot easily test run() without a full tokio setup and mocking
         // the external connections like Binance and Alpaca.
